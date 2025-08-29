@@ -11,4 +11,5 @@ You'll need the jsonpath-ng library to run this script
 pip install jsonpath-ng
 
 Command to run the script
+
 py R6StatParser.py <json_file_from_r6_dissect>
