@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 import sys
 import json
+import copy
 from jsonpath_ng.ext import parse
 
 stat_dict = {}
 plant_rounds = {}
 disable_rounds = {}
+
+final_output_dict = {}
+plants_during_map_dict = {}
+disables_during_map_dict = {}
 
 def init_lists(data):
     json_expr = parse("$.stats[*]")
@@ -223,65 +228,114 @@ def process_round(item, roundNum):
     print()
     return item
     
-def printOutput(json_tree):
-    #headshots = 'dummy'
+def initalizePlayerToFinalOutput(player):
+        tempDict = {}
+        #print(name[0])
+        tempDict['ok'] = 0
+        tempDict['od'] = 0
+        tempDict['KOST'] = 0
+        tempDict['1vX'] = 0
+        tempDict['aces'] = 0
+        #Sometimes we can determine who got a plant, but if more than one alive on a side its impossible without review
+        tempDict['plants'] = 0
+        tempDict['defuses'] = 0
+        #Will represent actual headshots in the final output
+        tempDict['headshots'] = 0
+        final_output_dict[player] = tempDict
+    
+def endOfMapProcessing(json_tree, map):
     for player in stat_dict:
-        playerStats = stat_dict[player]
+        playerMapStats = stat_dict[player]
+        
+        #if player is not yet in our final output - lets initialize it
+        if player not in final_output_dict:
+            initalizePlayerToFinalOutput(player)
+            
+        final_output_dict[player]['ok'] += stat_dict[player]['ok']
+        final_output_dict[player]['od'] += stat_dict[player]['od']
+        final_output_dict[player]['KOST'] += stat_dict[player]['KOST']
+        final_output_dict[player]['1vX'] += stat_dict[player]['1vX']
+        final_output_dict[player]['aces'] += stat_dict[player]['aces']
+        #Sometimes we can determine who got a plant, but if more than one alive on a side its impossible without review
+        final_output_dict[player]['plants'] += stat_dict[player]['plants']
+        final_output_dict[player]['defuses'] += stat_dict[player]['defuses']
+        #Headshots on TK's are counted in the headshot stat, so need to adjust in the event they occur
         headshotsJson = [h.value for h in parse(f'$.stats[?(@.username = "{player}")].headshots').find(json_tree)]
-        headshots = headshotsJson[0] - playerStats['headshot_adjustment']
-        print(f'{player} - Rounds of KOST = {playerStats["KOST"]}, Headshots = {headshots}, OK = {playerStats["ok"]}, OD = {playerStats["od"]}, 1vX = {playerStats["1vX"]}, Aces = {playerStats["aces"]}, Plants = {playerStats["plants"]}, Disables = {playerStats["defuses"]}')
+        final_output_dict[player]['headshots'] += headshotsJson[0] - stat_dict[player]['headshot_adjustment']
     
-    for round in plant_rounds:
-        if len(plant_rounds[round]['potentialKOSTlessPlanters']) > 0:
-            print(f'Plant occured in round {round}. One of these players planted {plant_rounds[round]["potentialPlanters"]}. Of these players {plant_rounds[round]["potentialKOSTlessPlanters"]} did not get KOST for the round yet')
-        else:
-            print(f'Plant occured in round {round}. One of these players planted {plant_rounds[round]["potentialPlanters"]}.')
+    plants_during_map_dict[map] = copy.deepcopy(plant_rounds)
+    disables_during_map_dict[map] = copy.deepcopy(disable_rounds)
+ 
+def resetRoundLists():
+    stat_dict.clear()
+    plant_rounds.clear()
+    disable_rounds.clear()
     
-    for round in disable_rounds:
-        if len(disable_rounds[round]['potentialKOSTlessDefusers']) > 0:
-            print(f'Defuser disable occured in round {round}. One of these players defused {disable_rounds[round]["potentialDefusers"]}. Of these players {disable_rounds[round]["potentialKOSTlessDefusers"]} did not get KOST for the round yet')
-        else:
-            print(f'Defuser disable occured in round {round}. One of these players defused {disable_rounds[round]["potentialDefusers"]}.')
+def printOutput():
+    #headshots = 'dummy'
+    for player in final_output_dict:
+        playerStats = final_output_dict[player]
+        print(f'{player:25} - Rounds of KOST = {playerStats["KOST"]:2}, Headshots = {playerStats["headshots"]:2}, OK = {playerStats["ok"]:2}, OD = {playerStats["od"]:2}, 1vX = {playerStats["1vX"]:2}, Aces = {playerStats["aces"]}, Plants = {playerStats["plants"]}, Disables = {playerStats["defuses"]}')
+    
+    for map in plants_during_map_dict:
+        currentMap = plants_during_map_dict[map]
+        for round in currentMap:
+            if len(currentMap[round]['potentialKOSTlessPlanters']) > 0:
+                print(f'Plant occured in map {map} round {round}. One of these players planted {currentMap[round]["potentialPlanters"]}. Of these players {currentMap[round]["potentialKOSTlessPlanters"]} did not get KOST for the round yet')
+            else:
+                print(f'Plant occured in map {map} round {round}. One of these players planted {currentMap[round]["potentialPlanters"]}.')
+    
+    for map in disables_during_map_dict:
+        currentMap = disables_during_map_dict[map]
+        for round in currentMap:
+            if len(currentMap[round]['potentialKOSTlessDefusers']) > 0:
+                print(f'Defuser disable occured in map {map} round {round}. One of these players defused {currentMap[round]["potentialDefusers"]}. Of these players {currentMap[round]["potentialKOSTlessDefusers"]} did not get KOST for the round yet')
+            else:
+                print(f'Defuser disable occured in map {map} round {round}. One of these players defused {currentMap[round]["potentialDefusers"]}.')
 
 def main():
     if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <json_file> [jsonpath_expression]")
+        print(f"Usage: {sys.argv[0]} <json_file_1> [json_file_2...]")
         sys.exit(1)
+        
+    for map in range(1, len(sys.argv)):
+        json_file = sys.argv[map]
+        #query_expr = sys.argv[2] if len(sys.argv) > 2 else None
 
-    json_file = sys.argv[1]
-    query_expr = sys.argv[2] if len(sys.argv) > 2 else None
+        try:
+            with open(json_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            print(f"Error: File '{json_file}' not found.")
+            sys.exit(1)
+        except json.JSONDecodeError as e:
+            print(f"Error: Failed to parse JSON - {e}")
+            sys.exit(1)
 
-    try:
-        with open(json_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except FileNotFoundError:
-        print(f"Error: File '{json_file}' not found.")
-        sys.exit(1)
-    except json.JSONDecodeError as e:
-        print(f"Error: Failed to parse JSON - {e}")
-        sys.exit(1)
-
-    init_lists(data)
-    
-    #Default expression
-    if not query_expr:
+        init_lists(data)
+        
+        #Default expression
+        #if not query_expr:
         query_expr = '$.rounds[*]'
-    
-    #if query_expr:
-        #try:
-    jsonpath_expr = parse(query_expr)
-    matches = [match.value for match in jsonpath_expr.find(data)]
+        
+        #if query_expr:
+            #try:
+        jsonpath_expr = parse(query_expr)
+        matches = [match.value for match in jsonpath_expr.find(data)]
 
-    roundNum = 1
-    for round in matches:
-        processed = process_round(round, roundNum)
-        roundNum += 1
+        roundNum = 1
+        for round in matches:
+            processed = process_round(round, roundNum)
+            roundNum += 1
+        
+        endOfMapProcessing(data, map)
+        resetRoundLists()
                 #print(json.dumps(processed, ensure_ascii=False))
         #except Exception as e:
             #print(f"Error parsing JSONPath: {e}")
     #else:
         #print(json.dumps(data, indent=4, ensure_ascii=False))
-    printOutput(data)
+    printOutput()
 
 if __name__ == "__main__":
     main()
