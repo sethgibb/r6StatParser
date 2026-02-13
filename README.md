@@ -2,7 +2,7 @@
 This a script made to parse the JSON output produced by r6-dissect.
 
 Some wierd band-aid behavior has to be taken due to some inconsistent output from r6-dissect.
-I don't expect this to be the most well coded thing I've every created beacuse of this
+I don't expect this to be the most well coded thing I've ever created beacuse of this
 
 Get the latest version of r6-dissect here: https://github.com/redraskal/r6-dissect/releases
 
