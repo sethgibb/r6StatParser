@@ -7,6 +7,7 @@ from jsonpath_ng.ext import parse
 stat_dict = {}
 plant_rounds = {}
 disable_rounds = {}
+side_round_wins = {}
 
 final_output_dict = {}
 plants_during_map_dict = {}
@@ -33,8 +34,21 @@ def init_lists(data):
         tempDict['headshot_adjustment'] = 0
         stat_dict[name[0]] = tempDict
     print(stat_dict)
+    
+def initSideRoundWins(nameOfMap):
+    tempDict = {}
+    tempDict[0] = {}
+    tempDict[1] = {}
+    tempDict[0]['Attack'] = 0
+    tempDict[1]['Attack'] = 0
+    tempDict[0]['Defense'] = 0
+    tempDict[1]['Defense'] = 0
+    tempDict[0]['Roster'] = []
+    tempDict[1]['Roster'] = []
+    side_round_wins[nameOfMap] = tempDict
+    print(side_round_wins)
 
-def process_round(item, roundNum):
+def process_round(item, roundNum, nameOfMap):
     print(f'Round Number {roundNum}')
     #start true and set false after first kill
     entryEngagement = True
@@ -52,15 +66,30 @@ def process_round(item, roundNum):
         KOST_recieved[username] = False
         kills[username] = 0
         
+    #Check which team won the round and wether they were attack or defence
+    teams = [team for team in parse("$.teams[*]").find(item)]
+    for team in teams:
+        teamValue = team.value
+        if teamValue.get("score") > teamValue.get("startingScore"):
+            sideOfWinningTeam = teamValue.get("role")
+            teamIndex = team.path.index
+            print(f'Team {teamIndex} won round {roundNum} on {sideOfWinningTeam}')
+            side_round_wins[nameOfMap][teamIndex][sideOfWinningTeam] += 1
+        
     #loop through players, check if dead, and if their team won.
     players = [player.value for player in parse("$.players[*]").find(item)]
     
     for player in players:
         name = player.get("username")
         isDead = [stat.value for stat in parse(f'$.stats[?(@.username = "{name}")].died').find(item)]
+        teamIndex = player.get('teamIndex')
+        
+        #Populate roster in side_round_wins if its the first round for output purposees
+        if roundNum == 1 :
+            side_round_wins[nameOfMap][teamIndex]['Roster'].append(name) 
+            
         #If Player survived to end of round
         if not isDead[0]:
-            teamIndex = player.get('teamIndex')
             playersTeam = [team.value for team in parse(f'$.teams[{teamIndex}]').find(item)]
             #Check if their team won the round (I've seen both teams somehow have the "won" field be true so do this way instead)
             if playersTeam[0].get("score") > playersTeam[0].get("startingScore"):
@@ -292,6 +321,15 @@ def printOutput():
                 print(f'Defuser disable occured in map {map} round {round}. One of these players defused {currentMap[round]["potentialDefusers"]}. Of these players {currentMap[round]["potentialKOSTlessDefusers"]} did not get KOST for the round yet')
             else:
                 print(f'Defuser disable occured in map {map} round {round}. One of these players defused {currentMap[round]["potentialDefusers"]}.')
+                
+    print()
+    for map in side_round_wins:
+        totalAttack = side_round_wins[map][0]['Attack'] + side_round_wins[map][1]['Attack']
+        totalDefense = side_round_wins[map][0]['Defense'] + side_round_wins[map][1]['Defense']
+        print(f'For {map}, attack won {totalAttack} rounds and defense won {totalDefense}')
+        print(f'This roster {side_round_wins[map][0]['Roster']} won {side_round_wins[map][0]['Attack']} attacks and {side_round_wins[map][0]['Defense']} defenses')
+        print(f'This roster {side_round_wins[map][1]['Roster']} won {side_round_wins[map][1]['Attack']} attacks and {side_round_wins[map][1]['Defense']} defenses')
+        print()
 
 def main():
     if len(sys.argv) < 2:
@@ -323,9 +361,12 @@ def main():
         jsonpath_expr = parse(query_expr)
         matches = [match.value for match in jsonpath_expr.find(data)]
 
+        nameOfMap = [name.value for name in parse("$.rounds[0].map.name").find(data)]
+        initSideRoundWins(nameOfMap[0])
+        print (nameOfMap)
         roundNum = 1
         for round in matches:
-            processed = process_round(round, roundNum)
+            processed = process_round(round, roundNum, nameOfMap[0])
             roundNum += 1
         
         endOfMapProcessing(data, map)
