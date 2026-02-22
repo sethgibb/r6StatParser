@@ -45,6 +45,10 @@ def initSideRoundWins(nameOfMap):
     tempDict[1]['Defense'] = 0
     tempDict[0]['Roster'] = []
     tempDict[1]['Roster'] = []
+    tempDict[0]['TotalAttack'] = 0
+    tempDict[1]['TotalAttack'] = 0
+    tempDict[0]['TotalDefense'] = 0
+    tempDict[1]['TotalDefense'] = 0
     side_round_wins[nameOfMap] = tempDict
     print(side_round_wins)
 
@@ -70,11 +74,12 @@ def process_round(item, roundNum, nameOfMap):
     teams = [team for team in parse("$.teams[*]").find(item)]
     for team in teams:
         teamValue = team.value
+        sideOfTeam = teamValue.get("role")
+        teamIndex = team.path.index
+        side_round_wins[nameOfMap][teamIndex]['Total'+sideOfTeam] += 1
         if teamValue.get("score") > teamValue.get("startingScore"):
-            sideOfWinningTeam = teamValue.get("role")
-            teamIndex = team.path.index
-            print(f'Team {teamIndex} won round {roundNum} on {sideOfWinningTeam}')
-            side_round_wins[nameOfMap][teamIndex][sideOfWinningTeam] += 1
+            print(f'Team {teamIndex} won round {roundNum} on {sideOfTeam}')
+            side_round_wins[nameOfMap][teamIndex][sideOfTeam] += 1
         
     #loop through players, check if dead, and if their team won.
     players = [player.value for player in parse("$.players[*]").find(item)]
@@ -327,8 +332,8 @@ def printOutput():
         totalAttack = side_round_wins[map][0]['Attack'] + side_round_wins[map][1]['Attack']
         totalDefense = side_round_wins[map][0]['Defense'] + side_round_wins[map][1]['Defense']
         print(f'For {map}, attack won {totalAttack} rounds and defense won {totalDefense}')
-        print(f'This roster {side_round_wins[map][0]['Roster']} won {side_round_wins[map][0]['Attack']} attacks and {side_round_wins[map][0]['Defense']} defenses')
-        print(f'This roster {side_round_wins[map][1]['Roster']} won {side_round_wins[map][1]['Attack']} attacks and {side_round_wins[map][1]['Defense']} defenses')
+        print(f'This roster {side_round_wins[map][0]['Roster']} won {side_round_wins[map][0]['Attack']} of {side_round_wins[map][0]['TotalAttack']} attacks and {side_round_wins[map][0]['Defense']} of {side_round_wins[map][0]['TotalDefense']} defenses')
+        print(f'This roster {side_round_wins[map][1]['Roster']} won {side_round_wins[map][1]['Attack']} of {side_round_wins[map][1]['TotalAttack']} attacks and {side_round_wins[map][1]['Defense']} of {side_round_wins[map][0]['TotalDefense']} defenses')
         print()
 
 def main():
