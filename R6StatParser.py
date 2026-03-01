@@ -333,7 +333,7 @@ def printOutput():
         totalDefense = side_round_wins[map][0]['Defense'] + side_round_wins[map][1]['Defense']
         print(f'For {map}, attack won {totalAttack} rounds and defense won {totalDefense}')
         print(f'This roster {side_round_wins[map][0]['Roster']} won {side_round_wins[map][0]['Attack']} of {side_round_wins[map][0]['TotalAttack']} attacks and {side_round_wins[map][0]['Defense']} of {side_round_wins[map][0]['TotalDefense']} defenses')
-        print(f'This roster {side_round_wins[map][1]['Roster']} won {side_round_wins[map][1]['Attack']} of {side_round_wins[map][1]['TotalAttack']} attacks and {side_round_wins[map][1]['Defense']} of {side_round_wins[map][0]['TotalDefense']} defenses')
+        print(f'This roster {side_round_wins[map][1]['Roster']} won {side_round_wins[map][1]['Attack']} of {side_round_wins[map][1]['TotalAttack']} attacks and {side_round_wins[map][1]['Defense']} of {side_round_wins[map][1]['TotalDefense']} defenses')
         print()
 
 def main():
