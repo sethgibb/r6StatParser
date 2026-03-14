@@ -36,21 +36,22 @@ def init_lists(data):
     print(stat_dict)
     
 def initSideRoundWins(nameOfMap):
-    tempDict = {}
-    tempDict[0] = {}
-    tempDict[1] = {}
-    tempDict[0]['Attack'] = 0
-    tempDict[1]['Attack'] = 0
-    tempDict[0]['Defense'] = 0
-    tempDict[1]['Defense'] = 0
-    tempDict[0]['Roster'] = []
-    tempDict[1]['Roster'] = []
-    tempDict[0]['TotalAttack'] = 0
-    tempDict[1]['TotalAttack'] = 0
-    tempDict[0]['TotalDefense'] = 0
-    tempDict[1]['TotalDefense'] = 0
-    side_round_wins[nameOfMap] = tempDict
-    print(side_round_wins)
+    if nameOfMap not in side_round_wins:
+        tempDict = {}
+        tempDict[0] = {}
+        tempDict[1] = {}
+        tempDict[0]['Attack'] = 0
+        tempDict[1]['Attack'] = 0
+        tempDict[0]['Defense'] = 0
+        tempDict[1]['Defense'] = 0
+        tempDict[0]['Roster'] = []
+        tempDict[1]['Roster'] = []
+        tempDict[0]['TotalAttack'] = 0
+        tempDict[1]['TotalAttack'] = 0
+        tempDict[0]['TotalDefense'] = 0
+        tempDict[1]['TotalDefense'] = 0
+        side_round_wins[nameOfMap] = tempDict
+        print(side_round_wins)
 
 def process_round(item, roundNum, nameOfMap):
     print(f'Round Number {roundNum}')
