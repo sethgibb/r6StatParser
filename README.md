@@ -10,10 +10,10 @@ Get the latest version of r6-dissect here: https://github.com/redraskal/r6-disse
 
 You'll need the jsonpath-ng library to run this script
 
-pip install jsonpath-ng
+pip install jsonpath-ng==1.7.0
 
 Command to run the script
 
 py R6StatParser.py <json_file_from_r6_dissect>
 
-Unsure if its due to a newer version of python OR jsonpath, but 'path.index' may not work and may need to replaced with 'path.indicies[0]'
+jsonpath 1.8.0 does not have 'path.index'. either use 1.7.0 or replace the lines that have errors with 'path.indicies[0]'
