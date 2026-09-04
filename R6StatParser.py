@@ -169,22 +169,23 @@ def process_round(item, roundNum, nameOfMap):
                     if tkill.get('type').get("name") == 'Kill':
                         if not afterPlant:
                             #print(f'Target Kill at {targetKillEarnedAt} compared to death at {killEarnedAtTime}')
-                            if targetKillEarnedAt > killEarnedAtTime and targetKillEarnedAt < (killEarnedAtTime+5):
+                            if targetKillEarnedAt > killEarnedAtTime and targetKillEarnedAt <= (killEarnedAtTime+5):
                                 tradedPlayer = tkill.get('target')
                                 print(f'{tradedPlayer} was traded by {killer}')
                                 KOST_recieved[tradedPlayer] = True
                         #If after plant, need to do some shenanigans to make sure we proper trades counted
                         elif afterPlant:
                             #if before the plant event and the kill is before 40, need to do some special processing
-                            if eventIndex < plantIndex and killEarnedAtTime > 40:
+                            if killEarnedAtTime > 40:
                                 tradeCutoffPrePlant = 45 - killEarnedAtTime
-                                if targetKillEarnedAt < (plantTime+tradeCutoffPrePlant):
+                                #print(f'checking if {targetKillEarnedAt} is less than {plantTime}+{tradeCutoffPrePlant}')
+                                if targetKillEarnedAt <= (plantTime+tradeCutoffPrePlant):
                                     tradedPlayer = tkill.get('target')
                                     #Print something to confirm special processing
                                     print(f'{tradedPlayer} was traded by {killer}')
                                     KOST_recieved[tradedPlayer] = True
-                            elif eventIndex > plantIndex:
-                                if targetKillEarnedAt > killEarnedAtTime and targetKillEarnedAt < (killEarnedAtTime+5):
+                            else:
+                                if targetKillEarnedAt > killEarnedAtTime and targetKillEarnedAt <= (killEarnedAtTime+5):
                                     tradedPlayer = tkill.get('target')
                                     print(f'{tradedPlayer} was traded by {killer}')
                                     KOST_recieved[tradedPlayer] = True
